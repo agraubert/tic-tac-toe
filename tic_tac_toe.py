@@ -4,10 +4,29 @@ import time
 from board_game_engine import gameplay
 from random import randint
 
+class BOARD:
+    def __init__(self, parent):
+        self.pic=[part[:] for part in parent.pic]
+        self.stasis=[part[:] for part in parent.pic]
+
+    def rebuild(self):
+        self.pic=[part[:] for part in self.stasis]
+
+    def mark(self, thing, location):
+        self.pic[location[0]][location[1]]=thing
+
+    def view(self, spacer=""):
+        for row in self.pic:
+            print(spacer.join(self.pic))
+
+##    def send(self):
+##        return [part[:] for part in self.pic]
+        
+        
 def total_nodes(n):
     return (n*(1+total_nodes(n-1))) if (n>1 and n<995) else 1
 
-def board_conversion(board):
+def board_conversion(board): #takes image only
     solution=[]
     visual=[part[:] for part in board]
     for y in range(len(board)):
@@ -18,30 +37,30 @@ def board_conversion(board):
                 solution.append(numpad)
     return (visual, solution)
 
+##
+##def toarray(string):
+##    return [a for a in string]
+##
+##def atos(picture):
+##    final_string=""
+##    for row in picture:
+##        final_string+="".join(row)
+##    return final_string
+##
+##def stoa(string, leny):
+##    lenx=(len(string))/leny
+##    if(int(lenx)!=lenx):
+##        return Nonestar
+##    final_array=[]
+##    for y in range(leny):
+##        current_row=[]
+##        for x in range(lenx):
+##            current_row.append(string[x+(y*lenx)])
+##        final_array.append(current_row)
+##    return final_array
 
-def toarray(string):
-    return [a for a in string]
 
-def atos(picture):
-    final_string=""
-    for row in picture:
-        final_string+="".join(row)
-    return final_string
-
-def stoa(string, leny):
-    lenx=(len(string))/leny
-    if(int(lenx)!=lenx):
-        return Nonestar
-    final_array=[]
-    for y in range(leny):
-        current_row=[]
-        for x in range(lenx):
-            current_row.append(string[x+(y*lenx)])
-        final_array.append(current_row)
-    return final_array
-
-
-def moves(board):
+def moves(board): #takes image only
     spots=[]
     for y in range(len(board)):
         for x in range(len(board[y])):
@@ -50,7 +69,7 @@ def moves(board):
     return spots
 
 def sums(board):
-    intboard=[thing[:] for thing in board]
+    intboard=board.pic
     for a in range(len(intboard)):
         for b in range(len(intboard[a])):
             if(intboard[a][b]=="O"):
@@ -86,35 +105,31 @@ def sums(board):
     #print(_sums)
     return _sums
         
-def game_over(board):
-    scores=sums(board)
+def game_over(board)
+    scores=sums(board.pic)
     human_best=max(scores)
     comp_best=min(scores)
     if(human_best==3):
         winning_pos=scores.index(3)
         print("\nThe Player Wins!")
-        for a in range(len(board)):
-            print("".join(board[a]))
+        board.view()
         return True
     elif(comp_best==-3):
         winning_pos=scores.index(-3)
         print("\nThe Computer Wins!")
-        for a in range(len(board)):
-            print("".join(board[a]))
+        board.view()
         return True
     else:
-        if(len(moves(board))<1):
+        if(len(moves(board.pic))<1):
             print("\nTie!")
-            for a in range(len(board)):
-                print("".join(board[a]))
+            board.view()
             return True
     return False
 
 def human_move(board):
     print("\n\n\n---------------YOUR TURN-----------------")
-    gamestate=board_conversion(board)
-    for row in gamestate[0]:
-        print(" ".join(row))
+    gamestate=board_conversion(board.pic)
+    board.view(" ")
     valid=False
     while(not valid):
         choice=input("\nWhich move will you make: ")
@@ -123,20 +138,22 @@ def human_move(board):
     print("\n\nYour Choice:")
     for y in range(len(gamestate[0])):
         for x in range(len(gamestate[0][y])):
-            board[y][x]="O" if (gamestate[0][y][x]==str(choice)) else board[y][x]
-    for row in board:
-        print("".join(row))
+            if(gamestate[0][y][x]==str(choice)):
+                board.mark("O", [y,x])
+    board.view()
     return board
 
 def computer_move(board):
     print("\nComputer is thinking.  Please be patient")
-    avaliable=moves(board)
+    avaliable=moves(board.pic)
     evaluated=[]
     print("Crunching ", total_nodes(len(avaliable)), " nodes in tree")
+    next_board=BOARD(board)
     for possibility in avaliable:
-        next_board=[thing[:] for thing in board]
+        next_board.rebuild()
         next_board[possibility[0]][possibility[1]]="X"
-        if(min(sums(next_board))==-3):
+        next_board.mark("X", [possibility[0], possibility[1]])
+        if(min(sums(next_board.pic))==-3):
             evaluated=[[possibility, 999]]
             break
         evaluated.append([possibility, branch_eval(next_board, "O")])
@@ -151,9 +168,7 @@ def computer_move(board):
     evaluated.sort(key=lambda x : x[1])
     evaluated.reverse()
     try:
-        out=evaluated.pop(evaluated.index(1))
-        evaluated.append(out)
-        evaluated.reverse()
+        evaluated.insert(0,(evaluated.pop(evaluated.index(1)))) # :)
     except ValueError:
         pass            
     #computer seems to make valid defensive moves, but tends to pick awkward offensive moves
@@ -166,13 +181,15 @@ def computer_move(board):
             if(pairing[1]==seek):
                 max_list.append(pairing)
         #im only treating the symptoms of a problem here.  until i can identify the problem
+        #in a small unidentified case, it encounters an IndexError when attempting this
         try:
             choice=max_list[randint(0, len(max_list))][0]
         except IndexError:
-            choice=evaluated[0][0]        
+            choice=evaluated[0][0]
+            print("Encountered Odd Index Error!\n", max_list)
     else:
         choice=evaluated[0][0]
-    board[choice[0]][choice[1]]="X"
+    board.mark("X", [choice[0], choice[1]])
     #print("\n\n\n")
     #for row in board:
         #print("".join(row))
@@ -180,13 +197,14 @@ def computer_move(board):
     return board
 
 def branch_eval(branch, player, lower_sum=0):
-    avaliable=moves(branch)
+    avaliable=moves(branch.pic)
     children=[]
+    newboard=BOARD(branch)
     for pair in avaliable:
-        newboard=[thing[:] for thing in branch]
-        newboard[pair[0]][pair[1]]=player
-        _max=max(sums(newboard))
-        _min=min(sums(newboard))
+        newboard.rebuild()
+        newboard.mark(player, [pair[0], pair[1]])
+        _max=max(sums(newboard.pic))
+        _min=min(sums(newboard.pic))
         if(_max==3 and _min!=-3):
             score=1
             if(player=="O"):
@@ -197,7 +215,7 @@ def branch_eval(branch, player, lower_sum=0):
                 return -1
         else:
             score=0
-        children.append([[thing[:] for thing in newboard], score])
+        children.append([newboard.pic, score])
     next_player="O" if (player=="X") else "X"
     branch_score=0
     for child in children:
@@ -213,8 +231,23 @@ grid=[]
 grid.append(["*","*","*"])
 grid.append(["*","*","*"])
 grid.append(["*","*","*"])
-
+grid=BOARD(grid)
     
 
 #print(str(branch_eval(grid, "O")))
+
+def gameplay(gameboard, p1_move, p2_move, endgame):
+    print("Starting Game: ")
+    End=False
+    raw_in=input("Who goes first, player 1 or player 2? ")
+    first_player=1 if (raw_in=="1" or raw_in=="p1" or raw_in=="player 1") else 2
+    while(not End):
+        gameboard=p1_move(gameboard) if (first_player==1) else p2_move(gameboard)
+        End=endgame(gameboard)
+        if(not End):
+            gameboard=p2_move(gameboard) if (first_player==1) else p1_move(gameboard)
+            End=endgame(gameboard)
+    return None
+
+
 gameplay(grid, computer_move, human_move, game_over)
