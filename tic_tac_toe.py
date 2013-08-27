@@ -5,9 +5,13 @@ from board_game_engine import gameplay
 from random import randint
 
 class BOARD:
-    def __init__(self, parent):
-        self.pic=[part[:] for part in parent.pic]
-        self.stasis=[part[:] for part in parent.pic]
+    def __init__(self, parent=None, override=False):
+        if(not override):
+            picture=parent.send()
+        else:
+            picture=parent
+        self.pic=[part[:] for part in picture]
+        self.stasis=[part[:] for part in self.pic]
 
     def rebuild(self):
         self.pic=[part[:] for part in self.stasis]
@@ -17,10 +21,10 @@ class BOARD:
 
     def view(self, spacer=""):
         for row in self.pic:
-            print(spacer.join(self.pic))
+            print(spacer.join(row))
 
-##    def send(self):
-##        return [part[:] for part in self.pic]
+    def send(self):
+        return [part[:] for part in self.pic]
         
         
 def total_nodes(n):
@@ -69,7 +73,7 @@ def moves(board): #takes image only
     return spots
 
 def sums(board):
-    intboard=board.pic
+    intboard=board.send()
     for a in range(len(intboard)):
         for b in range(len(intboard[a])):
             if(intboard[a][b]=="O"):
@@ -83,7 +87,7 @@ def sums(board):
     _sums.append(sum(intboard[0]))
     _sums.append(sum(intboard[1]))
     _sums.append(sum(intboard[2]))
-    for a in range(len(board)):
+    for a in range(len(board.pic)):
         if(len(_sums)>=4):
             _sums[3]+=intboard[a][0]
         else:
@@ -105,8 +109,8 @@ def sums(board):
     #print(_sums)
     return _sums
         
-def game_over(board)
-    scores=sums(board.pic)
+def game_over(board):
+    scores=sums(board)
     human_best=max(scores)
     comp_best=min(scores)
     if(human_best==3):
@@ -120,7 +124,7 @@ def game_over(board)
         board.view()
         return True
     else:
-        if(len(moves(board.pic))<1):
+        if(len(moves(board.send()))<1):
             print("\nTie!")
             board.view()
             return True
@@ -128,8 +132,9 @@ def game_over(board)
 
 def human_move(board):
     print("\n\n\n---------------YOUR TURN-----------------")
-    gamestate=board_conversion(board.pic)
-    board.view(" ")
+    gamestate=board_conversion(board.send())
+    for row in gamestate[0]:
+        print(" ".join(row))
     valid=False
     while(not valid):
         choice=input("\nWhich move will you make: ")
@@ -145,15 +150,14 @@ def human_move(board):
 
 def computer_move(board):
     print("\nComputer is thinking.  Please be patient")
-    avaliable=moves(board.pic)
+    avaliable=moves(board.send())
     evaluated=[]
     print("Crunching ", total_nodes(len(avaliable)), " nodes in tree")
     next_board=BOARD(board)
     for possibility in avaliable:
         next_board.rebuild()
-        next_board[possibility[0]][possibility[1]]="X"
-        next_board.mark("X", [possibility[0], possibility[1]])
-        if(min(sums(next_board.pic))==-3):
+        next_board.mark("X", possibility)
+        if(min(sums(next_board))==-3):
             evaluated=[[possibility, 999]]
             break
         evaluated.append([possibility, branch_eval(next_board, "O")])
@@ -189,7 +193,7 @@ def computer_move(board):
             print("Encountered Odd Index Error!\n", max_list)
     else:
         choice=evaluated[0][0]
-    board.mark("X", [choice[0], choice[1]])
+    board.mark("X", choice)
     #print("\n\n\n")
     #for row in board:
         #print("".join(row))
@@ -197,14 +201,14 @@ def computer_move(board):
     return board
 
 def branch_eval(branch, player, lower_sum=0):
-    avaliable=moves(branch.pic)
+    avaliable=moves(branch.send())
     children=[]
     newboard=BOARD(branch)
     for pair in avaliable:
         newboard.rebuild()
-        newboard.mark(player, [pair[0], pair[1]])
-        _max=max(sums(newboard.pic))
-        _min=min(sums(newboard.pic))
+        newboard.mark(player, pair)
+        _max=max(sums(newboard))
+        _min=min(sums(newboard))
         if(_max==3 and _min!=-3):
             score=1
             if(player=="O"):
@@ -215,7 +219,7 @@ def branch_eval(branch, player, lower_sum=0):
                 return -1
         else:
             score=0
-        children.append([newboard.pic, score])
+        children.append([BOARD(newboard), score])
     next_player="O" if (player=="X") else "X"
     branch_score=0
     for child in children:
@@ -231,23 +235,11 @@ grid=[]
 grid.append(["*","*","*"])
 grid.append(["*","*","*"])
 grid.append(["*","*","*"])
-grid=BOARD(grid)
-    
+grid=BOARD(grid, True)
+
 
 #print(str(branch_eval(grid, "O")))
 
-def gameplay(gameboard, p1_move, p2_move, endgame):
-    print("Starting Game: ")
-    End=False
-    raw_in=input("Who goes first, player 1 or player 2? ")
-    first_player=1 if (raw_in=="1" or raw_in=="p1" or raw_in=="player 1") else 2
-    while(not End):
-        gameboard=p1_move(gameboard) if (first_player==1) else p2_move(gameboard)
-        End=endgame(gameboard)
-        if(not End):
-            gameboard=p2_move(gameboard) if (first_player==1) else p1_move(gameboard)
-            End=endgame(gameboard)
-    return None
 
 
 gameplay(grid, computer_move, human_move, game_over)
