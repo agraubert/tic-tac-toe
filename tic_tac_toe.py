@@ -64,7 +64,11 @@ def sums(board):
 ##                intboard[a][b]=-1
 ##            else:
 ##                intboard[a][b]=0
-            intboard[a][b]=switch(intboard[a][b], case("O", lambda x=0: 1), case("X", lambda x=0:-1), default=(lambda x=0: x))
+            intboard[a][b]=switch(intboard[a][b],
+                                  case("O", lambda x=0: 1),
+                                  case("X", lambda x=0:-1),
+                                  default=(lambda x=0: x))
+            
     #you're not going to like this next part
     _sums=[] # r1, r2, r3, c1, c2, c3, d1, d2
     _sums.append(sum(intboard[0]))
