@@ -3,13 +3,15 @@ import os
 import time
 from board_game_engine import gameplay
 from random import randint
+from switches import case
+from switches import switch
+##from switch import case
+
+
 
 class BOARD:
-    def __init__(self, parent=None, override=False):
-        if(not override):
-            picture=parent.send()
-        else:
-            picture=parent
+    def __init__(self, parent, override=False):
+        picture=parent.send() if (not override) else parent
         self.pic=[part[:] for part in picture]
         self.stasis=[part[:] for part in self.pic]
 
@@ -41,27 +43,7 @@ def board_conversion(board): #takes image only
                 solution.append(numpad)
     return (visual, solution)
 
-##
-##def toarray(string):
-##    return [a for a in string]
-##
-##def atos(picture):
-##    final_string=""
-##    for row in picture:
-##        final_string+="".join(row)
-##    return final_string
-##
-##def stoa(string, leny):
-##    lenx=(len(string))/leny
-##    if(int(lenx)!=lenx):
-##        return Nonestar
-##    final_array=[]
-##    for y in range(leny):
-##        current_row=[]
-##        for x in range(lenx):
-##            current_row.append(string[x+(y*lenx)])
-##        final_array.append(current_row)
-##    return final_array
+
 
 
 def moves(board): #takes image only
@@ -76,12 +58,13 @@ def sums(board):
     intboard=board.send()
     for a in range(len(intboard)):
         for b in range(len(intboard[a])):
-            if(intboard[a][b]=="O"):
-                intboard[a][b]=1
-            elif(intboard[a][b]=="X"):
-                intboard[a][b]=-1
-            else:
-                intboard[a][b]=0
+##            if(intboard[a][b]=="O"):
+##                intboard[a][b]=1
+##            elif(intboard[a][b]=="X"):
+##                intboard[a][b]=-1
+##            else:
+##                intboard[a][b]=0
+            intboard[a][b]=switch(intboard[a][b], case("O", lambda x=0: 1), case("X", lambda x=0:-1), default=(lambda x=0: x))
     #you're not going to like this next part
     _sums=[] # r1, r2, r3, c1, c2, c3, d1, d2
     _sums.append(sum(intboard[0]))
@@ -228,15 +211,12 @@ def branch_eval(branch, player, lower_sum=0):
         branch_score+=child[1]
     return branch_score
             
-        
-    
                       
 grid=[]
 grid.append(["*","*","*"])
 grid.append(["*","*","*"])
 grid.append(["*","*","*"])
 grid=BOARD(grid, True)
-
 
 #print(str(branch_eval(grid, "O")))
 
