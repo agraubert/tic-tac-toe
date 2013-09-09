@@ -5,11 +5,10 @@ from board_game_engine import gameplay
 from random import randint
 from switches import case
 from switches import switch
-##from switch import case
-
 
 
 class BOARD:
+    
     def __init__(self, parent, override=False):
         picture=parent.send() if (not override) else parent
         self.pic=[part[:] for part in picture]
@@ -43,9 +42,6 @@ def board_conversion(board): #takes image only
                 solution.append(numpad)
     return (visual, solution)
 
-
-
-
 def moves(board): #takes image only
     spots=[]
     for y in range(len(board)):
@@ -58,18 +54,10 @@ def sums(board):
     intboard=board.send()
     for a in range(len(intboard)):
         for b in range(len(intboard[a])):
-##            if(intboard[a][b]=="O"):
-##                intboard[a][b]=1
-##            elif(intboard[a][b]=="X"):
-##                intboard[a][b]=-1
-##            else:
-##                intboard[a][b]=0
             intboard[a][b]=switch(intboard[a][b],
                                   case("O", lambda x=0: 1),
                                   case("X", lambda x=0:-1),
                                   default=(lambda x=0: x))
-            
-    #you're not going to like this next part
     _sums=[] # r1, r2, r3, c1, c2, c3, d1, d2
     _sums.append(sum(intboard[0]))
     _sums.append(sum(intboard[1]))
@@ -93,7 +81,6 @@ def sums(board):
     _sums.append(intboard[0][2])
     _sums[7]+=intboard[1][1]
     _sums[7]+=intboard[2][0]
-    #print(_sums)
     return _sums
         
 def game_over(board):
@@ -124,7 +111,10 @@ def human_move(board):
         print(" ".join(row))
     valid=False
     while(not valid):
-        choice=input("\nWhich move will you make: ")
+        try:
+            choice=input("\nWhich move will you make: ")
+        except ValueError:
+            continue
         for option in gamestate[1]:
             valid=True if (int(choice)==option) else valid
     print("\n\nYour Choice:")
@@ -152,10 +142,6 @@ def computer_move(board):
             evaluated[len(evaluated)-1][1]=-1000000
         else:
             evaluated[len(evaluated)-1][1]=abs(evaluated[len(evaluated)-1][1])
-        #print(evaluated[len(evaluated)-1][1])
-        #for row in next_board:
-            #print("".join(row))
-        #print("\n\n")
     evaluated.sort(key=lambda x : x[1])
     evaluated.reverse()
     try:
@@ -171,20 +157,10 @@ def computer_move(board):
         for pairing in evaluated:
             if(pairing[1]==seek):
                 max_list.append(pairing)
-        #im only treating the symptoms of a problem here.  until i can identify the problem
-        #in a small unidentified case, it encounters an IndexError when attempting this
-        try:
-            choice=max_list[randint(0, len(max_list))][0]
-        except IndexError:
-            choice=evaluated[0][0]
-            print("Encountered Odd Index Error!\n", max_list)
+        choice=max_list[randint(0, len(max_list)-1)][0]
     else:
         choice=evaluated[0][0]
     board.mark("X", choice)
-    #print("\n\n\n")
-    #for row in board:
-        #print("".join(row))
-    #input("\nPress enter to continue")
     return board
 
 def branch_eval(branch, player, lower_sum=0):
@@ -222,8 +198,14 @@ grid.append(["*","*","*"])
 grid.append(["*","*","*"])
 grid=BOARD(grid, True)
 
-#print(str(branch_eval(grid, "O")))
-
-
-
-gameplay(grid, computer_move, human_move, game_over)
+replay=True
+while(replay):
+    gameplay(grid, computer_move, human_move, game_over)
+    again=input("\nPlay again? (y/n): ")
+    grid.rebuild()
+    replay=switch(again,
+                  case("Y", lambda x=0: True),
+                  case("y", lambda x=0: True),
+                  case("yes", lambda x=0: True),
+                  default=lambda x=0: False)
+    
